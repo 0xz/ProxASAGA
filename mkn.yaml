@@ -1,0 +1,8 @@
+#! clean build -tSOg 0
+
+
+name: asaga
+src: proxasaga_atomic.cpp
+
+if_arg:
+  nix_gcc: -fPIC

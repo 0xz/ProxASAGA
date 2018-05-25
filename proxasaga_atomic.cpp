@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include <time.h>
 
-
 double inline partial_gradient(double p, double b) {
     // partial gradient of logistic loss
     double phi, exp_t;
@@ -29,8 +28,7 @@ double inline prox(double x, double step_size) {
 /* set foo = foo + bar atomically */
 void inline add_atomic(std::atomic<double>* foo, double bar) {
   auto current = foo[0].load();
-  while (!foo[0].compare_exchange_weak(current, current + bar))
-    ;
+  while (!foo[0].compare_exchange_weak(current, current + bar));
 }
 
 void saga_single_thread(
@@ -51,17 +49,6 @@ void saga_single_thread(
     while (true) {
       /* take a snapshot of the current vector of iterates in trace_x
          and time in trace_time, in order to plot convergence later on */
-      if (local_counter % iter_freq == 0 && thread_id == 0) {
-          int64_t c = local_counter / iter_freq;
-          for (j=0; j<n_features; j++) {
-              trace_x[n_features * c + j] = x[j];
-          }
-          clock_gettime(CLOCK_MONOTONIC, &finish);
-          elapsed = (finish.tv_sec - start.tv_sec);
-          elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-          trace_time[c] = (double) elapsed;
-          printf(".. iteration %lld, time elapsed %f min ..\n", c, elapsed / 60.);
-      }
 
       i = uni(rng);
       p = 0.;
@@ -71,8 +58,7 @@ void saga_single_thread(
       }
       grad_i = partial_gradient(p, b[i]);
       old_grad = memory_gradient[i].load();
-      while (!memory_gradient[i].compare_exchange_weak(old_grad, grad_i))
-          ;
+      while (!memory_gradient[i].compare_exchange_weak(old_grad, grad_i));
       incr = grad_i - old_grad;
 
       // .. update coefficients ..
@@ -83,16 +69,24 @@ void saga_single_thread(
           add_atomic(&gradient_average[j_idx], incr * A_data[j] / n_samples);
       }
       local_counter ++;
-      if (local_counter >= iter_freq * max_iter){
-          if (thread_id == 0) {
-              printf("..  done %lld iterations ..\n", local_counter / iter_freq);
+
+      if (local_counter % iter_freq == 0 && thread_id == 0) {
+          int64_t c = local_counter / iter_freq;
+          for (j=0; j<n_features; j++) {
+              trace_x[n_features * c + j] = x[j];
           }
+          clock_gettime(CLOCK_MONOTONIC, &finish);
+          elapsed = (finish.tv_sec - start.tv_sec);
+          elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+          trace_time[c] = (double) elapsed;
+      }
+
+      if (local_counter >= iter_freq * max_iter){
+   
           return;
       }
   }
-
 }
-
 
 void saga_single_thread_nonatomic(
         double* x, double* memory_gradient, double* gradient_average,
@@ -120,7 +114,7 @@ void saga_single_thread_nonatomic(
                 elapsed = (finish.tv_sec - start.tv_sec);
                 elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
                 trace_time[c] = (double) elapsed;
-                printf(".. iteration %lld, time elapsed %f min ..\n", c, elapsed / 60.);
+                //printf(".. iteration %lld, time elapsed %f min ..\n", c, elapsed / 60.);
             }
 
             i = uni(rng);
@@ -143,7 +137,7 @@ void saga_single_thread_nonatomic(
             }
             local_counter ++;
             if (local_counter >= iter_freq * max_iter){
-                printf("..  done %lld iterations ..\n", local_counter / iter_freq);
+                //printf("..  done %lld iterations ..\n", local_counter / iter_freq);
                 return;
             }
         }
